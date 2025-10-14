@@ -1,0 +1,135 @@
+# Model Configuration for Intelligent Traffic System
+
+# YOLO Model Configuration
+yolo:
+  model_path: "data/models/yolov5s.pt"
+  confidence_threshold: 0.5
+  iou_threshold: 0.45
+  input_size: [640, 640]
+  max_detections: 100
+
+# Traffic Flow Prediction Model Configuration
+traffic_flow:
+  model_path: "data/models/traffic_flow_model.pkl"
+  confidence_threshold: 0.7
+  features:
+    - "car_count"
+    - "bike_count"
+    - "bus_count"
+    - "truck_count"
+    - "hour"
+    - "day_of_week"
+    - "is_weekend"
+    - "is_peak_hour"
+  traffic_situations:
+    - "low"
+    - "normal"
+    - "high"
+    - "congested"
+
+# Road Condition Detection Configuration
+road_condition:
+  model_path: "data/models/road_condition_model.pkl"
+  threshold: 0.6
+  pothole:
+    min_area: 200
+    severity_thresholds:
+      low: 500
+      medium: 1500
+      high: 3000
+  crack:
+    min_length: 50
+    severity_thresholds:
+      low: 100
+      medium: 300
+      high: 500
+  surface_quality:
+    threshold: 0.3
+    quality_levels:
+      excellent: 0.9
+      good: 0.7
+      fair: 0.5
+      poor: 0.3
+      critical: 0.0
+
+# Lane Detection Configuration
+lane_detection:
+  roi_ratio: 0.6
+  min_line_length: 50
+  max_line_gap: 10
+  rho: 1
+  theta: 1.0
+  threshold: 50
+  canny:
+    low_threshold: 50
+    high_threshold: 150
+  hough:
+    min_line_length: 50
+    max_line_gap: 10
+
+# Traffic Sign Detection Configuration
+traffic_sign:
+  min_area: 100
+  max_area: 50000
+  aspect_ratio_range: [0.5, 2.0]
+  color_ranges:
+    red:
+      lower1: [0, 50, 50]
+      upper1: [10, 255, 255]
+      lower2: [170, 50, 50]
+      upper2: [180, 255, 255]
+    blue:
+      lower: [100, 50, 50]
+      upper: [130, 255, 255]
+    yellow:
+      lower: [20, 50, 50]
+      upper: [30, 255, 255]
+    white:
+      lower: [0, 0, 200]
+      upper: [180, 30, 255]
+
+# Processing Configuration
+processing:
+  image:
+    width: 640
+    height: 480
+    quality: 95
+  video:
+    fps: 30
+    buffer_size: 10
+  real_time:
+    enabled: true
+    processing_interval: 0.1
+
+# Output Configuration
+output:
+  save_results: true
+  directory: "results"
+  format: "json"
+  visualization:
+    show: true
+    window_size: [1280, 720]
+    draw_bounding_boxes: true
+    draw_lanes: true
+    draw_traffic_signs: true
+    draw_road_conditions: true
+  logging:
+    level: "INFO"
+    file: "logs/traffic_system.log"
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Performance Configuration
+performance:
+  max_fps: 30
+  target_fps: 15
+  gpu_acceleration: true
+  batch_processing: false
+  memory_limit: "2GB"
+
+# Safety Configuration
+safety:
+  lane_departure_threshold: 0.1
+  speed_limit_warning: true
+  emergency_brake_assist: false
+  collision_warning: true
+  blind_spot_detection: false

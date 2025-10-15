@@ -16,12 +16,12 @@ class ModelConfig:
     """Configuration for machine learning models."""
     
     # YOLO model settings
-    yolo_model_path: str = "data/models/yolov5s.pt"
+    yolo_model_path: str = "data/models/Model/weights/best.pt"
     yolo_confidence_threshold: float = 0.5
     yolo_iou_threshold: float = 0.45
     
     # Traffic flow prediction settings
-    traffic_flow_model_path: str = "data/models/traffic_flow_model.pkl"
+    traffic_flow_model_path: str = "data/models/data/models/traffic_flow_model.pkl"
     traffic_flow_confidence_threshold: float = 0.7
     
     # Road condition detection settings

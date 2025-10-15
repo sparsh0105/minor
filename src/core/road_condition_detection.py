@@ -12,7 +12,10 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..config.settings import settings
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.parent))
+from config.settings import settings
 
 
 @dataclass
@@ -728,3 +731,49 @@ class RoadConditionDetector:
         except Exception as e:
             self.logger.error(f"Error drawing detections: {e}")
             return image
+
+    def detect_road_conditions_from_file(self, image_path: str) -> RoadConditionResult:
+        """
+        Detect road conditions from an image file.
+        
+        Args:
+            image_path: Path to the image file.
+            
+        Returns:
+            RoadConditionResult: Detection results.
+        """
+        try:
+            # Load image
+            image = cv2.imread(image_path)
+            if image is None:
+                self.logger.error(f"Could not load image from {image_path}")
+                return RoadConditionResult(
+                    potholes=[],
+                    cracks=[],
+                    surface_defects=[],
+                    overall_condition="unknown",
+                    quality_score=0.0,
+                    maintenance_priority="unknown",
+                    success=False,
+                    error_message=f"Could not load image from {image_path}"
+                )
+            
+            # Detect road conditions
+            result = self.detect_road_conditions(image)
+            result.success = True
+            result.error_message = ""
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error detecting road conditions from file: {e}")
+            return RoadConditionResult(
+                potholes=[],
+                cracks=[],
+                surface_defects=[],
+                overall_condition="unknown",
+                quality_score=0.0,
+                maintenance_priority="unknown",
+                success=False,
+                error_message=str(e)
+            )

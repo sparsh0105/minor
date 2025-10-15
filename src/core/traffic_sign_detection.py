@@ -14,9 +14,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 try:
-    from ultralytics import YOLO
-    YOLO_AVAILABLE = True
-except ImportError:
+    import importlib.util
+    spec = importlib.util.find_spec("ultralytics")
+    if spec is not None:
+        from ultralytics import YOLO
+        YOLO_AVAILABLE = True
+    else:
+        YOLO_AVAILABLE = False
+        logging.warning("YOLO not available. Using traditional CV methods only.")
+except (ImportError, Exception):
     YOLO_AVAILABLE = False
     logging.warning("YOLO not available. Using traditional CV methods only.")
 
@@ -24,7 +30,10 @@ from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 import pickle
 
-from ..config.settings import settings
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.parent))
+from config.settings import settings
 
 
 @dataclass

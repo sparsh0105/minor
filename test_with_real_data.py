@@ -26,16 +26,16 @@ class RealDataTester:
     """
     
     def __init__(self):
-        """Initialize the tester with paths to real data."""
-        self.base_path = Path("..")  # Go up one level to access original repos
+        """Initialize the tester with paths to local data."""
+        self.base_path = Path(".")  # Current directory
         
-        # Define paths to real data
-        self.traffic_sign_test_path = self.base_path / "Real-Time-Traffic-Sign-Detection" / "Test"
-        self.traffic_sign_dataset_path = self.base_path / "Traffic-Sign-Detection" / "dataset"
-        self.traffic_sign_images_path = self.base_path / "Traffic-Sign-Detection" / "images"
-        self.road_detection_images_path = self.base_path / "Road-Detection-System"
-        self.traffic_flow_data_path = self.base_path / "Data-Science-Projects" / "Traffic-Flow-Prediction" / "TrafficDataset.csv"
-        self.traffic_sign_video_path = self.base_path / "Traffic-Sign-Detection" / "MVI_1049.avi"
+        # Define paths to local data
+        self.traffic_sign_test_path = self.base_path / "data" / "test_images"
+        self.traffic_sign_dataset_path = self.base_path / "data" / "test_images" / "traffic_sign_dataset"
+        self.traffic_sign_images_path = self.base_path / "data" / "test_images"
+        self.road_detection_images_path = self.base_path / "data" / "test_images"
+        self.traffic_flow_data_path = self.base_path / "data" / "datasets" / "TrafficDataset.csv"
+        self.traffic_sign_video_path = self.base_path / "data" / "test_videos" / "MVI_1049.avi"
         
         # Initialize detectors
         self.road_detector = RoadDetector()
@@ -85,11 +85,15 @@ class RealDataTester:
                 
                 # Test lane detection
                 start_time = time.time()
-                result_image = self.road_detector.detect_lanes(image)
+                lane_info = self.road_detector.detect_lanes(image)
                 processing_time = time.time() - start_time
                 
-                # Save result
-                output_path = f"test_results/road_detection_{image_name}"
+                # Draw lanes on image
+                result_image = self.road_detector.draw_lanes(image, lane_info)
+                
+                # Save result with better naming
+                base_name = image_name.split('.')[0]  # Remove extension
+                output_path = f"test_results/{base_name}_lane_detection_result.jpeg"
                 os.makedirs("test_results", exist_ok=True)
                 cv2.imwrite(output_path, result_image)
                 
@@ -160,8 +164,9 @@ class RealDataTester:
                 
                 processing_time = time.time() - start_time
                 
-                # Save result
-                output_path = f"test_results/traffic_sign_{image_name}"
+                # Save result with better naming
+                base_name = image_name.split('.')[0]  # Remove extension
+                output_path = f"test_results/traffic_sign_detection_{base_name}.png"
                 cv2.imwrite(output_path, result_image)
                 
                 results["tested_images"].append(image_name)
@@ -197,10 +202,8 @@ class RealDataTester:
             
             print(f"Loading data from: {self.traffic_flow_data_path}")
             
-            # Initialize predictor with real data
-            self.traffic_flow_predictor = TrafficFlowPredictor(
-                data_path=str(self.traffic_flow_data_path)
-            )
+            # Initialize predictor
+            self.traffic_flow_predictor = TrafficFlowPredictor()
             
             results["data_loaded"] = True
             results["model_trained"] = True
@@ -213,14 +216,20 @@ class RealDataTester:
             ]
             
             for i, test_case in enumerate(test_cases):
-                current_time = pd.Timestamp.now()
-                prediction = self.traffic_flow_predictor.predict_traffic_situation(
+                from src.core.traffic_flow_prediction import VehicleCounts
+                from datetime import datetime
+                
+                # Create VehicleCounts object
+                vehicle_counts = VehicleCounts(
                     car_count=test_case["car_count"],
                     bike_count=test_case["bike_count"],
                     bus_count=test_case["bus_count"],
                     truck_count=test_case["truck_count"],
-                    current_time=current_time
+                    total_count=sum(test_case.values()),
+                    timestamp=datetime.now()
                 )
+                
+                prediction = self.traffic_flow_predictor.predict_traffic_situation(vehicle_counts)
                 
                 print(f"Test {i+1}: Cars={test_case['car_count']}, Bikes={test_case['bike_count']}, "
                       f"Buses={test_case['bus_count']}, Trucks={test_case['truck_count']} "
@@ -266,11 +275,16 @@ class RealDataTester:
                 
                 # Test road condition detection
                 start_time = time.time()
-                result_image, anomalies = self.road_condition_detector.detect_conditions(image)
+                result = self.road_condition_detector.detect_road_conditions(image)
                 processing_time = time.time() - start_time
                 
-                # Save result
-                output_path = f"test_results/road_condition_{image_name}"
+                # Draw detections on image
+                result_image = self.road_condition_detector.draw_detections(image, result)
+                anomalies = result.potholes + result.cracks + result.surface_defects
+                
+                # Save result with better naming
+                base_name = image_name.split('.')[0]  # Remove extension
+                output_path = f"test_results/{base_name}_road_condition_analysis.jpeg"
                 cv2.imwrite(output_path, result_image)
                 
                 results["tested_images"].append(image_name)
@@ -318,10 +332,17 @@ class RealDataTester:
                     break
                 
                 # Apply road detection
-                frame_with_lanes = self.road_detector.detect_lanes(frame)
+                lane_info = self.road_detector.detect_lanes(frame)
+                frame_with_lanes = self.road_detector.draw_lanes(frame, lane_info)
                 
                 # Apply road condition detection
-                frame_with_conditions, _ = self.road_condition_detector.detect_conditions(frame_with_lanes)
+                condition_result = self.road_condition_detector.detect_road_conditions(frame)
+                frame_with_conditions = self.road_condition_detector.draw_detections(frame, condition_result)
+                
+                # Save every 5th frame for video results
+                if frame_count % 5 == 0:
+                    output_path = f"test_results/video_frame_{frame_count:03d}_combined_analysis.jpeg"
+                    cv2.imwrite(output_path, frame_with_conditions)
                 
                 frame_count += 1
                 

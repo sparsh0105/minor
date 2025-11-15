@@ -14,9 +14,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 try:
-    from ultralytics import YOLO
-    YOLO_AVAILABLE = True
-except ImportError:
+    import importlib.util
+    spec = importlib.util.find_spec("ultralytics")
+    if spec is not None:
+        from ultralytics import YOLO
+        YOLO_AVAILABLE = True
+    else:
+        YOLO_AVAILABLE = False
+        logging.warning("YOLO not available. Using traditional CV methods only.")
+except (ImportError, Exception):
     YOLO_AVAILABLE = False
     logging.warning("YOLO not available. Using traditional CV methods only.")
 
@@ -24,7 +30,10 @@ from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
 import pickle
 
-from ..config.settings import settings
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.parent))
+from config.settings import settings
 
 
 @dataclass
@@ -151,17 +160,30 @@ class TrafficSignDetector:
     def _load_svm_model(self) -> None:
         """Load pre-trained SVM model for traditional detection."""
         try:
-            # Try to load pre-trained SVM model
-            svm_model_path = Path(self.yolo_model_path).parent / "traffic_sign_svm.pkl"
-            if svm_model_path.exists():
-                with open(svm_model_path, 'rb') as f:
-                    model_data = pickle.load(f)
-                    self.svm_model = model_data['model']
-                    self.scaler = model_data['scaler']
-                    self.label_encoder = model_data['label_encoder']
-                self.logger.info("SVM model loaded successfully")
-            else:
-                self.logger.warning("SVM model not found, traditional detection will use basic classification")
+            # Try to load pre-trained SVM model from multiple possible locations
+            possible_paths = [
+                Path(self.yolo_model_path).parent / "traffic_sign_svm.pkl",
+                Path(self.yolo_model_path).parent.parent / "data_svm.dat",
+                Path("data/models/data_svm.dat")
+            ]
+            
+            for svm_model_path in possible_paths:
+                if svm_model_path.exists():
+                    with open(svm_model_path, 'rb') as f:
+                        model_data = pickle.load(f)
+                        if isinstance(model_data, dict):
+                            self.svm_model = model_data.get('model')
+                            self.scaler = model_data.get('scaler')
+                            self.label_encoder = model_data.get('label_encoder')
+                        else:
+                            # If it's not a dict, assume it's the model directly
+                            self.svm_model = model_data
+                            self.scaler = None
+                            self.label_encoder = None
+                    self.logger.info(f"SVM model loaded successfully from {svm_model_path}")
+                    return
+            
+            self.logger.warning("SVM model not found, traditional detection will use basic classification")
         except Exception as e:
             self.logger.error(f"Error loading SVM model: {e}")
     

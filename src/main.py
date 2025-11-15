@@ -15,11 +15,15 @@ import json
 from datetime import datetime
 import time
 
-from .core.road_detection import RoadDetector, RoadInfo
-from .core.traffic_sign_detection import TrafficSignDetector, TrafficSignDetectionResult
-from .core.traffic_flow_prediction import TrafficFlowPredictor, TrafficFlowResult, VehicleCounts
-from .core.road_condition_detection import RoadConditionDetector, RoadConditionResult
-from .config.settings import settings
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+
+from src.core.road_detection import RoadDetector, RoadInfo
+from src.core.traffic_sign_detection import TrafficSignDetector, TrafficSignDetectionResult
+from src.core.traffic_flow_prediction import TrafficFlowPredictor, TrafficFlowResult, VehicleCounts
+from src.core.road_condition_detection import RoadConditionDetector, RoadConditionResult
+from config.settings import settings
 
 
 class IntelligentTrafficSystem:
